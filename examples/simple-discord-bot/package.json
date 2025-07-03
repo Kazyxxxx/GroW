@@ -1,0 +1,15 @@
+{
+  "name": "simple-discord-bot",
+  "version": "1.0.0",
+  "description": "Bot Discord d'exemple pour la plateforme d'hébergement",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.14.1"
+  },
+  "keywords": ["discord", "bot", "example"],
+  "author": "Discord Bot Hosting Platform",
+  "license": "MIT"
+}
