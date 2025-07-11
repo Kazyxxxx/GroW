@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Discord Bot Hosting</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #f8fafc;
+            color: #2d3748;
+            line-height: 1.6;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 0;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .logo i {
+            margin-right: 12px;
+            font-size: 2rem;
+        }
+
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-logout {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-logout:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        .main-content {
+            min-height: 600px;
+        }
+
+        .sidebar {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            height: fit-content;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            margin-bottom: 25px;
+        }
+
+        .card h2 {
+            color: #2d3748;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.4rem;
+        }
+
+        .upload-area {
+            border: 3px dashed #e2e8f0;
+            border-radius: 12px;
+            padding: 40px 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .upload-area:hover {
+            border-color: #7289da;
+            background: #f7fafc;
+        }
+
+        .upload-area.dragover {
+            border-color: #7289da;
+            background: #ebf4ff;
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            color: #cbd5e0;
+            margin-bottom: 15px;
+        }
+
+        .upload-text {
+            color: #4a5568;
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+        }
+
+        .upload-hint {
+            color: #a0aec0;
+            font-size: 0.9rem;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #7289da;
+            box-shadow: 0 0 0 3px rgba(114, 137, 218, 0.1);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #7289da 0%, #5b73c4 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(114, 137, 218, 0.4);
+        }
+
+        .btn-success {
+            background: #48bb78;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #38a169;
+        }
+
+        .btn-danger {
+            background: #f56565;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #e53e3e;
+        }
+
+        .btn-secondary {
+            background: #edf2f7;
+            color: #4a5568;
+        }
+
+        .btn-secondary:hover {
+            background: #e2e8f0;
+        }
+
+        .bot-list {
+            display: grid;
+            gap: 20px;
+        }
+
+        .bot-item {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #7289da;
+        }
+
+        .bot-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .bot-name {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #2d3748;
+        }
+
+        .bot-status {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-running {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+
+        .status-stopped {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+
+        .bot-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .bot-meta {
+            color: #718096;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+        }
+
+        .logs-container {
+            background: #1a202c;
+            border-radius: 8px;
+            padding: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.85rem;
+        }
+
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
+        .log-info {
+            color: #63b3ed;
+        }
+
+        .log-error {
+            color: #fc8181;
+            background: rgba(252, 129, 129, 0.1);
+        }
+
+        .log-timestamp {
+            color: #a0aec0;
+            font-size: 0.75rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #718096;
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            color: #cbd5e0;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        .btn-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #718096;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #7289da;
+            transition: width 0.3s ease;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header-content {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+            
+            .bot-actions {
+                justify-content: center;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div class="logo">
+                <i class="fab fa-discord"></i>
+                Discord Bot Hosting
+            </div>
+            <div class="user-menu">
+                <div class="user-info">
+                    <i class="fas fa-user-circle"></i>
+                    <span id="username">Utilisateur</span>
+                </div>
+                <button class="btn-logout" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Déconnexion
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number" id="total-bots">0</div>
+                <div class="stat-label">Bots Total</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="running-bots">0</div>
+                <div class="stat-label">En Ligne</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="stopped-bots">0</div>
+                <div class="stat-label">Arrêtés</div>
+            </div>
+        </div>
+
+        <div class="dashboard-grid">
+            <div class="main-content">
+                <div class="card">
+                    <h2><i class="fas fa-robot"></i> Mes Bots Discord</h2>
+                    <div id="bot-list" class="bot-list">
+                        <!-- Les bots seront chargés ici -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar">
+                <div class="card">
+                    <h2><i class="fas fa-upload"></i> Nouveau Bot</h2>
+                    <form id="upload-form">
+                        <div class="form-group">
+                            <label for="bot-name">Nom du Bot</label>
+                            <input type="text" id="bot-name" name="botName" required placeholder="Mon Bot Discord">
+                        </div>
+                        
+                        <div class="upload-area" onclick="document.getElementById('bot-file').click()">
+                            <div class="upload-icon">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                            </div>
+                            <div class="upload-text">Cliquez pour sélectionner</div>
+                            <div class="upload-hint">Fichier ZIP uniquement (max 50MB)</div>
+                            <input type="file" id="bot-file" name="botFile" accept=".zip" style="display: none;">
+                        </div>
+                        
+                        <div class="progress-bar" id="upload-progress" style="display: none;">
+                            <div class="progress-fill" id="progress-fill"></div>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 15px;">
+                            <i class="fas fa-rocket"></i> Déployer le Bot
+                        </button>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <h2><i class="fas fa-info-circle"></i> Guide Rapide</h2>
+                    <div style="color: #718096; font-size: 0.9rem; line-height: 1.6;">
+                        <p><strong>1.</strong> Créez un fichier ZIP contenant votre bot</p>
+                        <p><strong>2.</strong> Assurez-vous que le fichier principal s'appelle <code>index.js</code></p>
+                        <p><strong>3.</strong> Incluez le fichier <code>package.json</code></p>
+                        <p><strong>4.</strong> Uploadez et déployez !</p>
+                        <br>
+                        <p><strong>Structure recommandée :</strong></p>
+                        <pre style="background: #f7fafc; padding: 10px; border-radius: 6px; font-size: 0.8rem;">
+bot-discord/
+├── index.js
+├── package.json
+├── config.json
+└── commands/</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal pour les logs -->
+    <div id="logs-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">
+                    <i class="fas fa-terminal"></i> 
+                    Logs - <span id="modal-bot-name"></span>
+                </h3>
+                <button class="btn-close" onclick="closeLogs()">&times;</button>
+            </div>
+            <div class="logs-container" id="logs-content">
+                <!-- Les logs seront affichés ici -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        let bots = [];
+
+        // Gestion des événements Socket.IO
+        socket.on('botLog', (data) => {
+            appendLog(data.botId, data.log);
+        });
+
+        socket.on('botStatusChange', (data) => {
+            updateBotStatus(data.botId, data.status);
+        });
+
+        // Charger les bots au démarrage
+        window.addEventListener('DOMContentLoaded', () => {
+            loadBots();
+        });
+
+        async function loadBots() {
+            try {
+                const response = await fetch('/api/bots');
+                if (response.ok) {
+                    bots = await response.json();
+                    renderBots();
+                    updateStats();
+                } else {
+                    window.location.href = '/';
+                }
+            } catch (error) {
+                console.error('Erreur lors du chargement des bots:', error);
+            }
+        }
+
+        function renderBots() {
+            const container = document.getElementById('bot-list');
+            
+            if (bots.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-robot"></i>
+                        <h3>Aucun bot déployé</h3>
+                        <p>Commencez par uploader votre premier bot Discord !</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = bots.map(bot => `
+                <div class="bot-item" data-bot-id="${bot.id}">
+                    <div class="bot-header">
+                        <div class="bot-name">${bot.name}</div>
+                        <div class="bot-status status-${bot.status}">${bot.status === 'running' ? 'En ligne' : 'Arrêté'}</div>
+                    </div>
+                    <div class="bot-meta">
+                        Créé le ${new Date(bot.createdAt).toLocaleDateString('fr-FR')}
+                    </div>
+                    <div class="bot-actions">
+                        ${bot.status === 'stopped' 
+                            ? `<button class="btn btn-success" onclick="startBot('${bot.id}')">
+                                <i class="fas fa-play"></i> Démarrer
+                               </button>`
+                            : `<button class="btn btn-secondary" onclick="stopBot('${bot.id}')">
+                                <i class="fas fa-stop"></i> Arrêter
+                               </button>`
+                        }
+                        <button class="btn btn-primary" onclick="showLogs('${bot.id}', '${bot.name}')">
+                            <i class="fas fa-terminal"></i> Logs
+                        </button>
+                        <button class="btn btn-danger" onclick="deleteBot('${bot.id}', '${bot.name}')">
+                            <i class="fas fa-trash"></i> Supprimer
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateStats() {
+            const total = bots.length;
+            const running = bots.filter(bot => bot.status === 'running').length;
+            const stopped = total - running;
+
+            document.getElementById('total-bots').textContent = total;
+            document.getElementById('running-bots').textContent = running;
+            document.getElementById('stopped-bots').textContent = stopped;
+        }
+
+        async function startBot(botId) {
+            try {
+                const response = await fetch(`/api/bots/${botId}/start`, {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    const bot = bots.find(b => b.id === botId);
+                    if (bot) {
+                        bot.status = 'running';
+                        renderBots();
+                        updateStats();
+                    }
+                }
+            } catch (error) {
+                console.error('Erreur lors du démarrage:', error);
+                alert('Erreur lors du démarrage du bot');
+            }
+        }
+
+        async function stopBot(botId) {
+            try {
+                const response = await fetch(`/api/bots/${botId}/stop`, {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    const bot = bots.find(b => b.id === botId);
+                    if (bot) {
+                        bot.status = 'stopped';
+                        renderBots();
+                        updateStats();
+                    }
+                }
+            } catch (error) {
+                console.error('Erreur lors de l\'arrêt:', error);
+                alert('Erreur lors de l\'arrêt du bot');
+            }
+        }
+
+        async function deleteBot(botId, botName) {
+            if (!confirm(`Êtes-vous sûr de vouloir supprimer le bot "${botName}" ?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/bots/${botId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    bots = bots.filter(b => b.id !== botId);
+                    renderBots();
+                    updateStats();
+                }
+            } catch (error) {
+                console.error('Erreur lors de la suppression:', error);
+                alert('Erreur lors de la suppression du bot');
+            }
+        }
+
+        async function showLogs(botId, botName) {
+            document.getElementById('modal-bot-name').textContent = botName;
+            document.getElementById('logs-modal').classList.add('active');
+            
+            try {
+                const response = await fetch(`/api/bots/${botId}/logs`);
+                if (response.ok) {
+                    const logs = await response.json();
+                    const container = document.getElementById('logs-content');
+                    
+                    if (logs.length === 0) {
+                        container.innerHTML = '<div style="color: #a0aec0; text-align: center; padding: 20px;">Aucun log disponible</div>';
+                    } else {
+                        container.innerHTML = logs.map(log => `
+                            <div class="log-entry log-${log.type}">
+                                <span class="log-timestamp">[${new Date(log.timestamp).toLocaleTimeString()}]</span>
+                                ${log.message}
+                            </div>
+                        `).join('');
+                    }
+                    
+                    // Scroll to bottom
+                    container.scrollTop = container.scrollHeight;
+                }
+            } catch (error) {
+                console.error('Erreur lors du chargement des logs:', error);
+            }
+        }
+
+        function closeLogs() {
+            document.getElementById('logs-modal').classList.remove('active');
+        }
+
+        function appendLog(botId, log) {
+            const modal = document.getElementById('logs-modal');
+            const modalBotId = modal.getAttribute('data-bot-id');
+            
+            if (modal.classList.contains('active') && modalBotId === botId) {
+                const container = document.getElementById('logs-content');
+                const logElement = document.createElement('div');
+                logElement.className = `log-entry log-${log.type}`;
+                logElement.innerHTML = `
+                    <span class="log-timestamp">[${new Date(log.timestamp).toLocaleTimeString()}]</span>
+                    ${log.message}
+                `;
+                container.appendChild(logElement);
+                container.scrollTop = container.scrollHeight;
+            }
+        }
+
+        function updateBotStatus(botId, status) {
+            const bot = bots.find(b => b.id === botId);
+            if (bot) {
+                bot.status = status;
+                renderBots();
+                updateStats();
+            }
+        }
+
+        // Gestion de l'upload
+        document.getElementById('upload-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const fileInput = document.getElementById('bot-file');
+            
+            if (!fileInput.files[0]) {
+                alert('Veuillez sélectionner un fichier ZIP');
+                return;
+            }
+            
+            const progressBar = document.getElementById('upload-progress');
+            const progressFill = document.getElementById('progress-fill');
+            
+            progressBar.style.display = 'block';
+            progressFill.style.width = '0%';
+            
+            try {
+                const xhr = new XMLHttpRequest();
+                
+                xhr.upload.addEventListener('progress', (e) => {
+                    if (e.lengthComputable) {
+                        const percentComplete = (e.loaded / e.total) * 100;
+                        progressFill.style.width = percentComplete + '%';
+                    }
+                });
+                
+                xhr.addEventListener('load', () => {
+                    progressBar.style.display = 'none';
+                    
+                    if (xhr.status === 200) {
+                        const result = JSON.parse(xhr.responseText);
+                        if (result.success) {
+                            bots.push(result.bot);
+                            renderBots();
+                            updateStats();
+                            e.target.reset();
+                            alert('Bot uploadé avec succès !');
+                        } else {
+                            alert(result.error || 'Erreur lors de l\'upload');
+                        }
+                    } else {
+                        alert('Erreur lors de l\'upload');
+                    }
+                });
+                
+                xhr.open('POST', '/api/bots/upload');
+                xhr.send(formData);
+                
+            } catch (error) {
+                progressBar.style.display = 'none';
+                console.error('Erreur upload:', error);
+                alert('Erreur lors de l\'upload');
+            }
+        });
+
+        // Drag & Drop
+        const uploadArea = document.querySelector('.upload-area');
+        
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                document.getElementById('bot-file').files = files;
+            }
+        });
+
+        // Affichage du nom de fichier sélectionné
+        document.getElementById('bot-file').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const uploadText = document.querySelector('.upload-text');
+                uploadText.textContent = file.name;
+            }
+        });
+
+        async function logout() {
+            try {
+                await fetch('/api/logout', { method: 'POST' });
+                window.location.href = '/';
+            } catch (error) {
+                console.error('Erreur logout:', error);
+                window.location.href = '/';
+            }
+        }
+
+        // Fermer la modale en cliquant à l'extérieur
+        document.getElementById('logs-modal').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) {
+                closeLogs();
+            }
+        });
+    </script>
+</body>
+</html>
